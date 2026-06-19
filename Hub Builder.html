@@ -6,10 +6,39 @@
     <title>Dynamic Design Sandbox Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fira+Code:wght@400;700&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Open+Sans:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; transition: font-family 0.2s ease; }
         
+        /* Universal Typography Preset Classes */
+        .f-inter { font-family: 'Inter', sans-serif; }
+        .f-poppins { font-family: 'Poppins', sans-serif; }
+        .f-merriweather { font-family: 'Merriweather', serif; }
+        .f-playfair { font-family: 'Playfair Display', serif; }
+        .f-jetbrains { font-family: 'JetBrains Mono', monospace; }
+        .f-caveat { font-family: 'Caveat', cursive; }
+        
+        /* New Font Presets */
+        .f-arial { font-family: Arial, Helvetica, sans-serif; }
+        .f-helvetica { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .f-times { font-family: 'Times New Roman', Times, serif; }
+        .f-calibri { font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif; }
+        .f-verdana { font-family: Verdana, Geneva, sans-serif; }
+        .f-roboto { font-family: 'Roboto', sans-serif; }
+        .f-opensans { font-family: 'Open Sans', sans-serif; }
+        .f-georgia { font-family: Georgia, serif; }
+        .f-garamond { font-family: Garamond, Baskerville, 'Baskerville Old Face', 'Hoefler Text', 'Times New Roman', serif; }
+        .f-baskerville { font-family: Baskerville, 'Playfair Display', serif; }
+        .f-palatino { font-family: Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif; }
+        .f-courier { font-family: 'Courier New', Courier, monospace; }
+        .f-consolas { font-family: Consolas, monaco, monospace; }
+        .f-firacode { font-family: 'Fira Code', monospace; }
+        .f-impact { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; }
+        .f-futura { font-family: Futura, 'Trebuchet MS', Arial, sans-serif; }
+        .f-comicsans { font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif; }
+
         /* Admin Sandbox Utilities */
         .admin-mode [data-edit] {
             outline: 2px dashed rgba(99, 102, 241, 0.4);
@@ -20,7 +49,6 @@
         .admin-mode .admin-action-btn { display: inline-flex !important; }
         .admin-mode .admin-block { display: flex !important; }
         
-        /* Drag and Drop Engine styles */
         .card-drag-handle { cursor: default; }
         .admin-mode .card-drag-handle { cursor: grab; }
         .admin-mode .card-drag-handle:active { cursor: grabbing; }
@@ -29,15 +57,66 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-all">
 
-    <div id="admin-control-bar" class="bg-slate-900 text-white px-4 py-2 text-xs flex flex-col lg:flex-row gap-3 justify-between items-center border-b border-slate-700 select-none">
-        <div class="flex items-center gap-2">
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="admin-status-dot"></span>
-            <span id="admin-status-text" class="font-medium text-slate-300">Template Preview Mode</span>
+    <div id="admin-control-bar" class="bg-slate-900 text-white px-4 py-3 text-xs flex flex-col gap-3 border-b border-slate-700 select-none">
+        <div class="flex flex-col md:flex-row gap-3 justify-between items-center w-full">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="admin-status-dot"></span>
+                <span id="admin-status-text" class="font-medium text-slate-300">Template Preview Mode</span>
+            </div>
+
+            <div id="typography-quick-panel" class="hidden items-center flex-wrap gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                <span class="text-indigo-400 font-bold flex items-center gap-1 mr-1"><i class="fa-solid fa-font"></i> Global Canvas Font:</span>
+                <select id="global-font-selector" onchange="setGlobalFont(this.value)" class="bg-slate-700 text-slate-100 rounded px-2.5 py-1 font-medium border border-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+                    <optgroup label="Modern Sans-Serif" class="bg-slate-800">
+                        <option value="f-inter" selected>Inter (Default)</option>
+                        <option value="f-poppins">Poppins</option>
+                        <option value="f-roboto">Roboto</option>
+                        <option value="f-opensans">Open Sans</option>
+                        <option value="f-arial">Arial</option>
+                        <option value="f-helvetica">Helvetica</option>
+                        <option value="f-calibri">Calibri</option>
+                        <option value="f-verdana">Verdana</option>
+                        <option value="f-futura">Futura</option>
+                    </optgroup>
+                    <optgroup label="Elegant Serifs" class="bg-slate-800">
+                        <option value="f-merriweather">Merriweather</option>
+                        <option value="f-playfair">Playfair Display</option>
+                        <option value="f-times">Times New Roman</option>
+                        <option value="f-georgia">Georgia</option>
+                        <option value="f-garamond">Garamond</option>
+                        <option value="f-baskerville">Baskerville</option>
+                        <option value="f-palatino">Palatino</option>
+                    </optgroup>
+                    <optgroup label="Monospace & Code" class="bg-slate-800">
+                        <option value="f-jetbrains">JetBrains Mono</option>
+                        <option value="f-firacode">Fira Code</option>
+                        <option value="f-consolas">Consolas</option>
+                        <option value="f-courier">Courier New</option>
+                    </optgroup>
+                    <optgroup label="Display & Creative" class="bg-slate-800">
+                        <option value="f-caveat">Caveat Handwriting</option>
+                        <option value="f-impact">Impact Bold</option>
+                        <option value="f-comicsans">Comic Sans MS</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="toggle-admin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1">
+                    <i class="fa-solid fa-palette"></i> <span id="toggle-text">Turn On Template Editor</span>
+                </button>
+                <button id="get-gcode-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 hidden">
+                    <i class="fa-solid fa-code"></i> Get Code
+                </button>
+                <button id="reset-dashboard-btn" class="text-slate-400 hover:text-rose-400 font-medium ml-2 transition">
+                    Reset Layout
+                </button>
+            </div>
         </div>
         
-        <div id="theme-picker-wrap" class="items-center flex-wrap gap-4 hidden bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
+        <div id="theme-picker-wrap" class="items-center flex-wrap gap-4 hidden border-t border-slate-800 pt-2 mt-1">
             <div class="flex items-center gap-1.5">
-                <span class="text-slate-400 font-medium">Style:</span>
+                <span class="text-slate-400 font-medium">Layout Background Style:</span>
                 <select id="global-bg-mode" onchange="toggleBgModeInput(); applyCustomColors();" class="bg-slate-700 text-white rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none">
                     <option value="solid">Solid Color</option>
                     <option value="gradient" selected>Gradient Flow</option>
@@ -52,22 +131,47 @@
                 <input type="color" id="picker-gradient-stop" value="#312e81" oninput="applyCustomColors()" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
             </div>
             <div class="flex items-center gap-1.5">
-                <span class="text-slate-400 font-medium">Text/Accent Theme:</span>
+                <span class="text-slate-400 font-medium">Accent Color:</span>
                 <input type="color" id="picker-accent" value="#38bdf8" oninput="applyCustomColors()" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
             </div>
         </div>
+    </div>
 
-        <div class="flex items-center gap-2">
-            <button id="toggle-admin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded font-bold transition flex items-center gap-1">
-                <i class="fa-solid fa-palette"></i> <span id="toggle-text">Turn On Template Editor</span>
-            </button>
-            <button id="get-gcode-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded font-bold transition flex items-center gap-1 hidden">
-                <i class="fa-solid fa-code"></i> Get Google Sites Code
-            </button>
-            <button id="reset-dashboard-btn" class="text-slate-400 hover:text-rose-400 font-medium ml-2 transition">
-                Reset Layout Sandbox
-            </button>
-        </div>
+    <div id="text-inline-toolbar" class="fixed hidden bg-slate-900 border border-slate-700 text-white p-1 rounded-xl shadow-2xl flex items-center gap-1 z-[999] select-none">
+        <select id="toolbar-font" class="bg-slate-800 text-white rounded text-xs px-2 py-1 focus:outline-none border border-slate-700 cursor-pointer max-w-[130px]">
+            <option value="inherit">Font Face</option>
+            <option value="'Inter', sans-serif">Inter</option>
+            <option value="'Poppins', sans-serif">Poppins</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Open Sans', sans-serif">Open Sans</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'Helvetica Neue', sans-serif">Helvetica</option>
+            <option value="Calibri, sans-serif">Calibri</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+            <option value="Futura, sans-serif">Futura</option>
+            <option value="'Merriweather', serif">Merriweather</option>
+            <option value="'Playfair Display', serif">Playfair</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Garamond, serif">Garamond</option>
+            <option value="Baskerville, serif">Baskerville</option>
+            <option value="Palatino, serif">Palatino</option>
+            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+            <option value="'Fira Code', monospace">Fira Code</option>
+            <option value="Consolas, monospace">Consolas</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="'Caveat', cursive">Caveat</option>
+            <option value="Impact, sans-serif">Impact</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans</option>
+        </select>
+        
+        <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+        <button id="toolbar-size-up" title="Increase Size" class="p-1 hover:bg-slate-800 rounded text-xs transition w-7 h-7 flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i><i class="fa-solid fa-font text-xs"></i></button>
+        <button id="toolbar-size-down" title="Decrease Size" class="p-1 hover:bg-slate-800 rounded text-xs transition w-7 h-7 flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i><i class="fa-solid fa-font text-xs"></i></button>
+        
+        <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+        <button id="toolbar-bold" title="Toggle Bold" class="p-1.5 hover:bg-slate-800 rounded text-xs font-bold transition w-7 h-7 flex items-center justify-center"><i class="fa-solid fa-bold"></i></button>
+        <button id="toolbar-italic" title="Toggle Italic" class="p-1.5 hover:bg-slate-800 rounded text-xs italic transition w-7 h-7 flex items-center justify-center"><i class="fa-solid fa-italic"></i></button>
     </div>
 
     <header id="main-header" class="text-white shadow-md sticky top-0 z-50 transition-colors duration-300">
@@ -330,6 +434,7 @@
         let activeTargetIconEl = null;
         let activeTargetCard = null;
         let dragSrcElement = null;
+        let currentTextSelectionRange = null;
 
         const body = document.body;
         const gridContainer = document.getElementById('dynamic-grid-container');
@@ -344,6 +449,8 @@
         const statusDot = document.getElementById('admin-status-dot');
         const statusText = document.getElementById('admin-status-text');
         const themePickerWrap = document.getElementById('theme-picker-wrap');
+        const typographyQuickPanel = document.getElementById('typography-quick-panel');
+        const globalFontSelector = document.getElementById('global-font-selector');
 
         const globalBgMode = document.getElementById('global-bg-mode');
         const pickerPrimary = document.getElementById('picker-primary');
@@ -351,6 +458,13 @@
         const color2Wrap = document.getElementById('color-2-wrap');
         const labelColor1 = document.getElementById('label-color-1');
         const pickerAccent = document.getElementById('picker-accent');
+
+        const inlineToolbar = document.getElementById('text-inline-toolbar');
+        const toolbarFont = document.getElementById('toolbar-font');
+        const toolbarSizeUp = document.getElementById('toolbar-size-up');
+        const toolbarSizeDown = document.getElementById('toolbar-size-down');
+        const toolbarBold = document.getElementById('toolbar-bold');
+        const toolbarItalic = document.getElementById('toolbar-italic');
 
         const linkModal = document.getElementById('link-modal');
         const modalLinkInput = document.getElementById('modal-link-input');
@@ -384,6 +498,16 @@
                 return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
             }
             return hex;
+        }
+
+        // --- Streamlined Global Typography Settings ---
+        function setGlobalFont(fontClassName) {
+            // Remove any legacy font styling hooks comprehensively
+            body.className = body.className.replace(/\bf-\S+/g, '').trim();
+            body.classList.add(fontClassName);
+            
+            if(globalFontSelector) globalFontSelector.value = fontClassName;
+            localStorage.setItem('hub_global_font_class', fontClassName);
         }
 
         function toggleBgModeInput() {
@@ -426,7 +550,6 @@
 
             document.getElementById('guide-info-icon').style.color = primary;
             
-            // Loop updates across all loaded checklist nodes
             document.querySelectorAll('.guide-badge').forEach((badge, idx) => {
                 const isEven = idx % 2 === 1;
                 badge.style.backgroundColor = isEven ? hexToRgba(accent, 0.15) : hexToRgba(primary, 0.1);
@@ -479,6 +602,90 @@
             document.querySelectorAll('.grid-card').forEach(card => renderCardInlineStyle(card));
         }
 
+        // --- Core Inline Floating Selection Selection System ---
+        function checkTextSelection() {
+            if (!isAdminMode) {
+                inlineToolbar.classList.add('hidden');
+                return;
+            }
+            const selection = window.getSelection();
+            if (!selection.rangeCount || selection.isCollapsed) {
+                inlineToolbar.classList.add('hidden');
+                return;
+            }
+            
+            const range = selection.getRangeAt(0);
+            let container = range.commonAncestorContainer;
+            if (container.nodeType === 3) container = container.parentNode;
+            
+            if (container.closest('[data-edit]') || container.closest('[data-edit-num]')) {
+                currentTextSelectionRange = range.cloneRange();
+                const rect = range.getBoundingClientRect();
+                
+                inlineToolbar.classList.remove('hidden');
+                inlineToolbar.style.top = `${rect.top + window.scrollY - inlineToolbar.offsetHeight - 8}px`;
+                inlineToolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (inlineToolbar.offsetWidth / 2)}px`;
+            } else {
+                inlineToolbar.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('mouseup', () => setTimeout(checkTextSelection, 10));
+        document.addEventListener('keyup', () => setTimeout(checkTextSelection, 10));
+
+        function applyInlineStyleToSelection(styleProperty, styleValue) {
+            if (!currentTextSelectionRange) return;
+            
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(currentTextSelectionRange);
+
+            let container = currentTextSelectionRange.commonAncestorContainer;
+            if (container.nodeType === 3) container = container.parentNode;
+            
+            const editableParent = container.closest('[data-edit]') || container.closest('[data-edit-num]');
+            if (editableParent) {
+                if (currentTextSelectionRange.collapsed) {
+                    editableParent.style[styleProperty] = styleValue;
+                } else {
+                    document.execCommand('styleWithCSS', false, true);
+                    if (styleProperty === 'fontFamily') {
+                        document.execCommand('fontName', false, styleValue);
+                    }
+                }
+                saveDashboardLayoutState();
+            }
+        }
+
+        function modifySelectionSize(direction) {
+            if (!currentTextSelectionRange) return;
+            let container = currentTextSelectionRange.commonAncestorContainer;
+            if (container.nodeType === 3) container = container.parentNode;
+
+            const editableParent = container.closest('[data-edit]') || container.closest('[data-edit-num]');
+            if (editableParent) {
+                const currentSizeStr = window.getComputedStyle(editableParent).fontSize;
+                let currentSize = parseInt(currentSizeStr) || 14;
+                
+                if(direction === 'up') currentSize += 2;
+                if(direction === 'down') currentSize = Math.max(8, currentSize - 2);
+
+                editableParent.style.fontSize = currentSize + 'px';
+                saveDashboardLayoutState();
+            }
+        }
+
+        toolbarFont.addEventListener('change', () => {
+            applyInlineStyleToSelection('fontFamily', toolbarFont.value);
+            toolbarFont.value = "inherit";
+            inlineToolbar.classList.add('hidden');
+        });
+
+        toolbarSizeUp.addEventListener('click', () => modifySelectionSize('up'));
+        toolbarSizeDown.addEventListener('click', () => modifySelectionSize('down'));
+        toolbarBold.addEventListener('click', () => { document.execCommand('bold', false, null); saveDashboardLayoutState(); });
+        toolbarItalic.addEventListener('click', () => { document.execCommand('italic', false, null); saveDashboardLayoutState(); });
+
         function saveDashboardLayoutState() {
             const clonedGrid = gridContainer.cloneNode(true);
             const gridInlineAdd = clonedGrid.querySelector('#inline-add-card-block');
@@ -496,7 +703,11 @@
             localStorage.setItem('hub_custom_accent_hex', pickerAccent.value);
             
             document.querySelectorAll('[data-edit]').forEach(el => {
-                if(el.id) localStorage.setItem('hub_sandbox_text_' + el.id, el.innerHTML.trim());
+                if(el.id) {
+                    localStorage.setItem('hub_sandbox_text_' + el.id, el.innerHTML.trim());
+                    localStorage.setItem('hub_sandbox_font_' + el.id, el.style.fontFamily || '');
+                    localStorage.setItem('hub_sandbox_size_' + el.id, el.style.fontSize || '');
+                }
             });
         }
 
@@ -517,11 +728,13 @@
             const savedPrimary = localStorage.getItem('hub_custom_primary_hex');
             const savedStop = localStorage.getItem('hub_custom_stop_hex');
             const savedAccent = localStorage.getItem('hub_custom_accent_hex');
+            const savedGlobalFont = localStorage.getItem('hub_global_font_class');
             
             if(savedMode) globalBgMode.value = savedMode;
             if(savedPrimary) pickerPrimary.value = savedPrimary;
             if(savedStop) pickerGradientStop.value = savedStop;
             if(savedAccent) pickerAccent.value = savedAccent;
+            if(savedGlobalFont) setGlobalFont(savedGlobalFont);
             
             toggleBgModeInput();
             applyCustomColors();
@@ -531,6 +744,12 @@
                 if(el.id) {
                     const txt = localStorage.getItem('hub_sandbox_text_' + el.id);
                     if (txt !== null) el.innerHTML = txt;
+                    
+                    const font = localStorage.getItem('hub_sandbox_font_' + el.id);
+                    if (font) el.style.fontFamily = font;
+                    
+                    const size = localStorage.getItem('hub_sandbox_size_' + el.id);
+                    if (size) el.style.fontSize = size;
                 }
             });
             attachDynamicCardListeners();
@@ -541,12 +760,13 @@
             isAdminMode = !isAdminMode;
             if (isAdminMode) {
                 body.classList.add('admin-mode');
-                toggleText.textContent = "Lock Design Layout & Save";
+                toggleText.textContent = "Lock Layout & Save";
                 toggleAdminBtn.classList.replace('bg-indigo-600', 'bg-emerald-600');
                 statusDot.classList.replace('bg-emerald-500', 'bg-amber-500');
                 statusText.textContent = "Sandbox Design View Active";
                 getGcodeBtn.classList.remove('hidden');
                 themePickerWrap.classList.replace('hidden', 'flex');
+                typographyQuickPanel.classList.replace('hidden', 'flex');
                 
                 document.querySelectorAll('[data-edit]').forEach(el => el.setAttribute('contenteditable', 'true'));
                 document.querySelectorAll('[data-edit-num]').forEach(el => el.setAttribute('contenteditable', 'true'));
@@ -559,16 +779,16 @@
                 statusText.textContent = "Template Preview Mode";
                 getGcodeBtn.classList.add('hidden');
                 themePickerWrap.classList.replace('flex', 'hidden');
+                typographyQuickPanel.classList.replace('flex', 'hidden');
+                inlineToolbar.classList.add('hidden');
 
                 document.querySelectorAll('[data-edit]').forEach(el => el.removeAttribute('contenteditable'));
                 document.querySelectorAll('[data-edit-num]').forEach(el => el.removeAttribute('contenteditable'));
                 document.querySelectorAll('.grid-card').forEach(el => el.setAttribute('draggable', 'false'));
                 saveDashboardLayoutState();
-                alert("Design configurations saved to application cache!");
             }
         });
 
-        // Add Custom App Layout Cards Handler
         inlineAddBlock.addEventListener('click', () => {
             const cardHtml = `
             <div class="grid-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group" draggable="true" style="--card-bg: #ffffff; --card-text: #1e293b; --card-accent: #4f46e5;">
@@ -589,7 +809,7 @@
                 <div class="mt-6 relative flex items-center gap-2">
                     <button title="Modify Target URL Location" class="edit-link-trigger admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
                     <a href="https://example.com" target="_blank" class="card-anchor w-full text-center text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
-                        <span contenteditable="true" data-edit class="card-btn-text">Open Dynamic Target Location</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        <span contenteditable="true" data-edit class="card-btn-text">Open Target Location</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                     </a>
                 </div>
             </div>`;
@@ -603,7 +823,6 @@
             }
         });
 
-        // Add Custom Checklist Items Grid Handler
         inlineAddChecklistBlock.addEventListener('click', () => {
             const totalItems = document.querySelectorAll('.checklist-item').length + 1;
             const itemHtml = `
@@ -616,7 +835,7 @@
             
             inlineAddChecklistBlock.insertAdjacentHTML('beforebegin', itemHtml);
             attachChecklistListeners();
-            applyCustomColors(); // Automatically binds proper color backgrounds instantly
+            applyCustomColors();
         });
 
         function attachChecklistListeners() {
@@ -694,10 +913,8 @@
             e.dataTransfer.setData('text/style-text', this.style.getPropertyValue('--card-text'));
             e.dataTransfer.setData('text/style-accent', this.style.getPropertyValue('--card-accent'));
         }
-        function handleDragOver(e) {
-            if (e.preventDefault) e.preventDefault();
-            return false;
-        }
+        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
+        
         function handleDrop(e) {
             if (e.stopPropagation) e.stopPropagation();
             if (dragSrcElement !== this && isAdminMode) {
@@ -714,20 +931,13 @@
                 renderCardInlineStyle(this);
 
                 attachDynamicCardListeners();
-                document.querySelectorAll('[data-edit]').forEach(el => {
-                    if (isAdminMode) el.setAttribute('contenteditable', 'true');
-                });
+                document.querySelectorAll('[data-edit]').forEach(el => { if (isAdminMode) el.setAttribute('contenteditable', 'true'); });
             }
             return false;
         }
-        function handleDragEnd() {
-            document.querySelectorAll('.grid-card').forEach(c => c.classList.remove('ghost-card'));
-        }
+        function handleDragEnd() { document.querySelectorAll('.grid-card').forEach(c => c.classList.remove('ghost-card')); }
 
-        document.body.addEventListener('click', (e) => {
-            if (isAdminMode && e.target.closest('a')) e.preventDefault();
-        });
-
+        document.body.addEventListener('click', (e) => { if (isAdminMode && e.target.closest('a')) e.preventDefault(); });
         modalCancelBtn.addEventListener('click', () => { linkModal.classList.add('hidden'); });
         modalSaveBtn.addEventListener('click', () => {
             if (activeTargetAnchor) activeTargetAnchor.setAttribute('href', modalLinkInput.value.trim());
@@ -738,9 +948,7 @@
         iconModalSave.addEventListener('click', () => {
             if(activeTargetIconEl) {
                 const targetIconString = modalIconInput.value.trim();
-                if(targetIconString) {
-                    activeTargetIconEl.className = `fa-icon fa-solid ${targetIconString} text-xl`;
-                }
+                if(targetIconString) activeTargetIconEl.className = `fa-icon fa-solid ${targetIconString} text-xl`;
             }
             iconModal.classList.add('hidden');
         });
@@ -757,9 +965,7 @@
         });
 
         resetDashboardBtn.addEventListener('click', () => {
-            if (confirm("Reset template back to default setup? This drops all dashboard structural and color configurations completely.")) {
-                localStorage.clear(); window.location.reload();
-            }
+            if (confirm("Reset template back to default setup?")) { localStorage.clear(); window.location.reload(); }
         });
 
         getGcodeBtn.addEventListener('click', () => {
@@ -767,11 +973,12 @@
             const adminBar = docClone.querySelector('#admin-control-bar');
             if(adminBar) adminBar.remove();
 
+            const tBar = docClone.querySelector('#text-inline-toolbar');
+            if(tBar) tBar.remove();
+
             docClone.querySelectorAll('.admin-action-btn').forEach(el => el.remove());
-            
             const inlineAdd = docClone.querySelector('#inline-add-card-block');
             if (inlineAdd) inlineAdd.remove();
-            
             const checklistInlineAdd = docClone.querySelector('#inline-add-checklist-block');
             if (checklistInlineAdd) checklistInlineAdd.remove();
 
