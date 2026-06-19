@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Design Sandbox Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Admin Sandbox Utilities */
+        .admin-mode [data-edit] {
+            outline: 2px dashed rgba(99, 102, 241, 0.4);
+            outline-offset: 4px;
+            cursor: pointer;
+        }
+        .admin-mode [data-edit]:hover { background-color: rgba(99, 102, 241, 0.05); }
+        .admin-mode .admin-action-btn { display: inline-flex !important; }
+        .admin-mode .admin-block { display: flex !important; }
+        
+        /* Drag and Drop Engine styles */
+        .card-drag-handle { cursor: default; }
+        .admin-mode .card-drag-handle { cursor: grab; }
+        .admin-mode .card-drag-handle:active { cursor: grabbing; }
+        .ghost-card { opacity: 0.3; border: 2px dashed #6366f1 !important; background: #e0e7ff !important; transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-all">
+
+    <div id="admin-control-bar" class="bg-slate-900 text-white px-4 py-2 text-xs flex flex-col lg:flex-row gap-3 justify-between items-center border-b border-slate-700 select-none">
+        <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="admin-status-dot"></span>
+            <span id="admin-status-text" class="font-medium text-slate-300">Template Preview Mode</span>
+        </div>
+        
+        <div id="theme-picker-wrap" class="items-center flex-wrap gap-4 hidden bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
+            <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 font-medium">Style:</span>
+                <select id="global-bg-mode" onchange="toggleBgModeInput(); applyCustomColors();" class="bg-slate-700 text-white rounded px-1.5 py-0.5 border border-slate-600 focus:outline-none">
+                    <option value="solid">Solid Color</option>
+                    <option value="gradient" selected>Gradient Flow</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span id="label-color-1" class="text-slate-400 font-medium">Color 1:</span>
+                <input type="color" id="picker-primary" value="#1e1b4b" oninput="applyCustomColors()" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+            </div>
+            <div id="color-2-wrap" class="flex items-center gap-1.5">
+                <span class="text-slate-400 font-medium">Color 2:</span>
+                <input type="color" id="picker-gradient-stop" value="#312e81" oninput="applyCustomColors()" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 font-medium">Text/Accent Theme:</span>
+                <input type="color" id="picker-accent" value="#38bdf8" oninput="applyCustomColors()" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="toggle-admin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-palette"></i> <span id="toggle-text">Turn On Template Editor</span>
+            </button>
+            <button id="get-gcode-btn" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded font-bold transition flex items-center gap-1 hidden">
+                <i class="fa-solid fa-code"></i> Get Google Sites Code
+            </button>
+            <button id="reset-dashboard-btn" class="text-slate-400 hover:text-rose-400 font-medium ml-2 transition">
+                Reset Layout Sandbox
+            </button>
+        </div>
+    </div>
+
+    <header id="main-header" class="text-white shadow-md sticky top-0 z-50 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="brand-logo-badge" class="bg-gradient-to-tr from-cyan-400 to-indigo-500 text-white p-2 rounded-xl shadow-lg transition-all duration-300">
+                    <i class="fa-solid fa-graduation-cap text-lg"></i>
+                </div>
+                <div>
+                    <h1 id="txt-header-title" data-edit class="font-extrabold text-sm sm:text-base tracking-wide uppercase">[Section / Class Title]</h1>
+                    <p id="txt-header-subtitle" data-edit class="text-[10px] sm:text-xs font-medium transition-colors duration-300">Teacher Resource Dashboard</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:block text-right">
+                    <p id="txt-clock-label" class="text-[10px] font-medium uppercase transition-colors duration-300">Session Clock</p>
+                    <p id="live-datetime" class="text-xs font-semibold text-white"></p>
+                </div>
+                <div id="txt-avatar-initials" data-edit class="h-9 w-9 rounded-full flex items-center justify-center border transition-colors duration-300 font-bold text-xs">T</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <div id="hero-banner" class="rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden transition-all duration-300">
+            <div class="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-white/5 rounded-full mix-blend-overlay filter blur-xl"></div>
+            <div class="absolute left-1/3 bottom-0 translate-y-12 w-48 h-48 bg-white/5 rounded-full mix-blend-overlay filter blur-xl"></div>
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="space-y-2">
+                    <span id="txt-hero-tag" data-edit class="inline-block font-bold text-[10px] tracking-wider uppercase px-3 py-1 rounded-full border transition-all duration-300">Class Section Portal</span>
+                    <h2 id="txt-hero-title" data-edit class="text-2xl sm:text-3xl font-black tracking-tight">[Welcome Heading Title]</h2>
+                    <p id="txt-hero-desc" data-edit class="text-xs sm:text-sm max-w-2xl leading-relaxed opacity-90 transition-all duration-300">Welcome to your unified sandbox workspace. Customize layouts, mix color properties, add shortcuts, re-assign icons, and drag modules into any configuration profile.</p>
+                </div>
+                <div class="w-full md:w-auto relative flex items-center gap-2">
+                    <button data-link-id="link-google-meet" class="admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow hidden z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
+                    <a id="link-google-meet" href="https://meet.google.com" target="_blank" class="w-full sm:w-auto bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-center font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-rose-950/30 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-video animate-pulse"></i><span id="txt-meet-btn" data-edit>Launch Video Classroom</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="dynamic-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="grid-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group" draggable="false" style="--card-bg: #ffffff; --card-text: #1e293b; --card-accent: #0d9488;">
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-30">
+                    <button title="Configure Card Palette" class="card-palette-trigger admin-action-btn bg-slate-700 hover:bg-slate-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-palette"></i></button>
+                    <button title="Delete Card Permanently" class="delete-card-btn admin-action-btn bg-rose-600 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="card-drag-handle p-3.5 rounded-xl transition-all" title="Click to swap icon / Hold & Drag card block to reorder">
+                            <i class="fa-icon fa-solid fa-address-book text-xl"></i>
+                        </div>
+                        <span data-edit class="card-badge text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Directory</span>
+                    </div>
+                    <h3 data-edit class="card-title text-base font-extrabold">Student & Parent Contacts</h3>
+                    <p data-edit class="card-desc text-xs mt-2 leading-relaxed opacity-80">Access primary student records, verified emergency communication channels, and household addresses.</p>
+                </div>
+                <div class="mt-6 relative flex items-center gap-2">
+                    <button title="Modify Target URL Location" class="edit-link-trigger admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow hidden z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
+                    <a href="https://docs.google.com/spreadsheets" target="_blank" class="card-anchor w-full text-center text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                        <span data-edit class="card-btn-text">Open Contacts Database</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group" draggable="false" style="--card-bg: #ffffff; --card-text: #1e293b; --card-accent: #059669;">
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-30">
+                    <button title="Configure Card Palette" class="card-palette-trigger admin-action-btn bg-slate-700 hover:bg-slate-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-palette"></i></button>
+                    <button title="Delete Card Permanently" class="delete-card-btn admin-action-btn bg-rose-600 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="card-drag-handle p-3.5 rounded-xl transition-all" title="Click to swap icon / Hold & Drag card block to reorder">
+                            <i class="fa-icon fa-solid fa-clipboard-user text-xl"></i>
+                        </div>
+                        <span data-edit class="card-badge text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Attendance</span>
+                    </div>
+                    <h3 data-edit class="card-title text-base font-extrabold">Daily Attendance Log</h3>
+                    <p data-edit class="card-desc text-xs mt-2 leading-relaxed opacity-80">Log everyday roll-calls, student synchronous log metrics, and compile overall attendance track record sheets.</p>
+                </div>
+                <div class="mt-6 relative flex items-center gap-2">
+                    <button title="Modify Target URL Location" class="edit-link-trigger admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow hidden z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
+                    <a href="https://docs.google.com/spreadsheets" target="_blank" class="card-anchor w-full text-center text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                        <span data-edit class="card-btn-text">Open Tracker Sheet</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group" draggable="false" style="--card-bg: #ffffff; --card-text: #1e293b; --card-accent: #ca8a04;">
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-30">
+                    <button title="Configure Card Palette" class="card-palette-trigger admin-action-btn bg-slate-700 hover:bg-slate-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-palette"></i></button>
+                    <button title="Delete Card Permanently" class="delete-card-btn admin-action-btn bg-rose-600 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="card-drag-handle p-3.5 rounded-xl transition-all" title="Click to swap icon / Hold & Drag card block to reorder">
+                            <i class="fa-icon fa-solid fa-table-list text-xl"></i>
+                        </div>
+                        <span data-edit class="card-badge text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Schedule</span>
+                    </div>
+                    <h3 data-edit class="card-title text-base font-extrabold">Class Timetable Matrix</h3>
+                    <p data-edit class="card-desc text-xs mt-2 leading-relaxed opacity-80">Review the unified class period schedules, rotating subject modules, and teacher assignment rosters.</p>
+                </div>
+                <div class="mt-6 relative flex items-center gap-2">
+                    <button title="Modify Target URL Location" class="edit-link-trigger admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow hidden z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
+                    <a href="https://docs.google.com/document" target="_blank" class="card-anchor w-full text-center text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                        <span data-edit class="card-btn-text">View Class Schedule</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div id="inline-add-card-block" class="admin-block border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-100/50 hover:bg-indigo-50/30 rounded-2xl p-6 min-h-[260px] flex-col items-center justify-center text-center group cursor-pointer transition hidden select-none">
+                <div class="w-12 h-12 rounded-full bg-white text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 shadow-sm flex items-center justify-center transition border border-slate-200">
+                    <i class="fa-solid fa-plus text-lg"></i>
+                </div>
+                <h4 class="text-sm font-bold text-slate-700 mt-3 group-hover:text-indigo-900">Add Custom Card Block</h4>
+                <p class="text-[11px] text-slate-400 mt-1 max-w-[200px]">Instantly insert a new, themeable custom shortcut module straight into the design container grid.</p>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h3 id="txt-guide-header" data-edit class="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                        <i id="guide-info-icon" class="fa-solid fa-circle-info transition-colors duration-300"></i><span>Classroom Checklist & Core Advisory Guidelines</span>
+                    </h3>
+                    
+                    <div id="checklist-items-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <div class="checklist-item p-4 rounded-xl border border-slate-100 bg-slate-50/50 relative group">
+                            <button title="Remove Checklist Item" class="delete-checklist-btn admin-action-btn absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="guide-badge h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 transition-all duration-300" data-edit-num>1</div>
+                            <h4 data-edit class="font-bold text-xs text-slate-800 mb-1">Verify Active Logs</h4>
+                            <p data-edit class="text-[11px] text-slate-500 leading-relaxed">Ensure daily rosters match synchronous entry thresholds on time.</p>
+                        </div>
+                        
+                        <div class="checklist-item p-4 rounded-xl border border-slate-100 bg-slate-50/50 relative group">
+                            <button title="Remove Checklist Item" class="delete-checklist-btn admin-action-btn absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="guide-badge h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 transition-all duration-300" data-edit-num>2</div>
+                            <h4 data-edit class="font-bold text-xs text-slate-800 mb-1">Document Changes</h4>
+                            <p data-edit class="text-[11px] text-slate-500 leading-relaxed">Keep logs updated regarding performance milestones or observation files.</p>
+                        </div>
+                        
+                        <div class="checklist-item p-4 rounded-xl border border-slate-100 bg-slate-50/50 relative group">
+                            <button title="Remove Checklist Item" class="delete-checklist-btn admin-action-btn absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                            <div class="guide-badge h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 transition-all duration-300" data-edit-num>3</div>
+                            <h4 data-edit class="font-bold text-xs text-slate-800 mb-1">Maintain Sync Hooks</h4>
+                            <p data-edit class="text-[11px] text-slate-500 leading-relaxed">Periodically check tracking logs against syllabus calendars to stay aligned.</p>
+                        </div>
+
+                        <div id="inline-add-checklist-block" class="admin-block border border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50/30 hover:bg-indigo-50/20 rounded-xl p-4 min-h-[120px] flex-col items-center justify-center text-center group cursor-pointer transition hidden select-none">
+                            <i class="fa-solid fa-plus text-slate-400 group-hover:text-indigo-600 transition"></i>
+                            <span class="text-[11px] font-bold text-slate-500 mt-1 block group-hover:text-indigo-900">Add Checklist Item</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div id="adviser-sidebar-card" class="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between transition-all duration-300">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div id="adviser-icon-wrap" class="p-3.5 rounded-xl transition-all duration-300"><i class="fa-solid fa-user-tie text-xl"></i></div>
+                        <span id="txt-adviser-tag" data-edit class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider transition-all duration-300">Adviser</span>
+                    </div>
+                    <h3 id="txt-adviser-name" data-edit class="text-base font-extrabold text-slate-800">[Teacher Name]</h3>
+                    <p id="txt-adviser-email" data-edit class="text-[11px] font-semibold mt-1 flex items-center gap-1 transition-all duration-300">
+                        <i class="fa-regular fa-envelope"></i><span>[teacher.email@school.edu]</span>
+                    </p>
+                    <p id="txt-adviser-quote" data-edit class="text-xs text-slate-500 mt-3 leading-relaxed italic p-3 rounded-lg border border-slate-100">
+                        "[Insert custom bio quote or classroom vision mission strategy statement here]"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer id="txt-footer" data-edit class="bg-slate-100 border-t border-slate-200 py-4 text-center text-xs text-slate-400 mt-12">
+        &copy; [School / Department Portal Label Here]
+    </footer>
+
+    <div id="link-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white max-w-md w-full p-6 rounded-2xl shadow-xl border border-slate-200 mx-4">
+            <h3 class="text-base font-bold text-slate-800 mb-2">Update Hyperlink Location</h3>
+            <input type="url" id="modal-link-input" class="w-full text-sm border border-slate-300 p-2.5 rounded-xl mb-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://example.com">
+            <div class="flex justify-end gap-2">
+                <button id="modal-cancel-btn" class="text-xs font-bold text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-xl transition">Cancel</button>
+                <button id="modal-save-btn" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl transition shadow-sm">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="icon-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white max-w-md w-full p-6 rounded-2xl shadow-xl border border-slate-200 mx-4">
+            <h3 class="text-base font-bold text-slate-800 mb-1">Swap FontAwesome Icon</h3>
+            <p class="text-xs text-slate-500 mb-3">Input an official icon modifier identifier string from FontAwesome (e.g., <code>fa-gear</code>, <code>fa-star</code>, <code>fa-book</code>).</p>
+            <input type="text" id="modal-icon-input" class="w-full text-sm font-mono border border-slate-300 p-2.5 rounded-xl mb-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="fa-bolt">
+            <div class="flex justify-end gap-2">
+                <button id="icon-modal-cancel" class="text-xs font-bold text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-xl transition">Cancel</button>
+                <button id="icon-modal-save" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl transition shadow-sm">Update Graphic</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="card-palette-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white max-w-sm w-full p-6 rounded-2xl shadow-xl border border-slate-200 mx-4">
+            <h3 class="text-base font-bold text-slate-800 mb-1">Customize Card Colors</h3>
+            <p class="text-xs text-slate-500 mb-4">Set precise independent colors for this block asset container.</p>
+            <div class="space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">Card Background:</span>
+                    <input type="color" id="modal-card-bg" class="w-8 h-8 rounded cursor-pointer border border-slate-300">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">Card Main Text:</span>
+                    <input type="color" id="modal-card-text" class="w-8 h-8 rounded cursor-pointer border border-slate-300">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">Card Accent / Button:</span>
+                    <input type="color" id="modal-card-accent" class="w-8 h-8 rounded cursor-pointer border border-slate-300">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button id="card-palette-cancel" class="text-xs font-bold text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-xl transition">Cancel</button>
+                <button id="card-palette-save" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl transition shadow-sm">Apply Colors</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="code-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white max-w-2xl w-full p-6 rounded-2xl shadow-2xl border border-slate-200 mx-4 flex flex-col max-h-[85vh]">
+            <h3 class="text-base font-bold text-slate-800 mb-1">Google Sites HTML Export Block</h3>
+            <p class="text-xs text-slate-500 mb-3">Copy your baked-in custom configuration and supply it directly to the Sites <strong>Embed Code</strong> window.</p>
+            <textarea id="code-textarea" readonly class="w-full flex-1 text-xs font-mono border border-slate-200 p-4 rounded-xl bg-slate-950 text-slate-200 focus:outline-none resize-none overflow-y-auto leading-relaxed"></textarea>
+            <div class="flex justify-between items-center mt-4">
+                <span id="copy-success-msg" class="text-xs font-semibold text-emerald-600 opacity-0 transition-opacity duration-300">Layout copied to clipboard!</span>
+                <div class="flex gap-2">
+                    <button id="code-close-btn" class="text-xs font-bold text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-xl transition">Close</button>
+                    <button id="code-copy-btn" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-xl transition shadow-sm"><i class="fa-regular fa-copy"></i> Copy Asset Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const clockEl = document.getElementById('live-datetime');
+            if (clockEl) clockEl.textContent = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateDateTime, 1000); updateDateTime();
+
+        let isAdminMode = false;
+        let activeTargetAnchor = null;
+        let activeTargetIconEl = null;
+        let activeTargetCard = null;
+        let dragSrcElement = null;
+
+        const body = document.body;
+        const gridContainer = document.getElementById('dynamic-grid-container');
+        const inlineAddBlock = document.getElementById('inline-add-card-block');
+        const checklistItemsGrid = document.getElementById('checklist-items-grid');
+        const inlineAddChecklistBlock = document.getElementById('inline-add-checklist-block');
+        
+        const toggleAdminBtn = document.getElementById('toggle-admin-btn');
+        const toggleText = document.getElementById('toggle-text');
+        const getGcodeBtn = document.getElementById('get-gcode-btn');
+        const resetDashboardBtn = document.getElementById('reset-dashboard-btn');
+        const statusDot = document.getElementById('admin-status-dot');
+        const statusText = document.getElementById('admin-status-text');
+        const themePickerWrap = document.getElementById('theme-picker-wrap');
+
+        const globalBgMode = document.getElementById('global-bg-mode');
+        const pickerPrimary = document.getElementById('picker-primary');
+        const pickerGradientStop = document.getElementById('picker-gradient-stop');
+        const color2Wrap = document.getElementById('color-2-wrap');
+        const labelColor1 = document.getElementById('label-color-1');
+        const pickerAccent = document.getElementById('picker-accent');
+
+        const linkModal = document.getElementById('link-modal');
+        const modalLinkInput = document.getElementById('modal-link-input');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalSaveBtn = document.getElementById('modal-save-btn');
+
+        const iconModal = document.getElementById('icon-modal');
+        const modalIconInput = document.getElementById('modal-icon-input');
+        const iconModalCancel = document.getElementById('icon-modal-cancel');
+        const iconModalSave = document.getElementById('icon-modal-save');
+
+        const cardPaletteModal = document.getElementById('card-palette-modal');
+        const modalCardBg = document.getElementById('modal-card-bg');
+        const modalCardText = document.getElementById('modal-card-text');
+        const modalCardAccent = document.getElementById('modal-card-accent');
+        const cardPaletteCancel = document.getElementById('card-palette-cancel');
+        const cardPaletteSave = document.getElementById('card-palette-save');
+
+        const codeModal = document.getElementById('code-modal');
+        const codeTextarea = document.getElementById('code-textarea');
+        const codeCloseBtn = document.getElementById('code-close-btn');
+        const codeCopyBtn = document.getElementById('code-copy-btn');
+        const copySuccessMsg = document.getElementById('copy-success-msg');
+
+        function hexToRgba(hex, alpha) {
+            let c;
+            if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+                c= hex.substring(1).split('');
+                if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; }
+                c= '0x' + c.join('');
+                return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+            }
+            return hex;
+        }
+
+        function toggleBgModeInput() {
+            if (globalBgMode.value === 'solid') {
+                color2Wrap.style.display = 'none';
+                labelColor1.textContent = 'Solid Color:';
+            } else {
+                color2Wrap.style.display = 'flex';
+                labelColor1.textContent = 'Color 1:';
+            }
+        }
+
+        function applyCustomColors() {
+            const primary = pickerPrimary.value;
+            const accent = pickerAccent.value;
+            const mode = globalBgMode.value;
+
+            const mainHeader = document.getElementById('main-header');
+            mainHeader.style.backgroundColor = primary;
+            document.getElementById('txt-header-subtitle').style.color = accent;
+            document.getElementById('txt-clock-label').style.color = accent;
+            
+            const initialsBadge = document.getElementById('txt-avatar-initials');
+            initialsBadge.style.backgroundColor = hexToRgba(primary, 0.4);
+            initialsBadge.style.borderColor = accent;
+            initialsBadge.style.color = accent;
+
+            const heroBanner = document.getElementById('hero-banner');
+            if (mode === 'solid') {
+                heroBanner.style.background = primary;
+            } else {
+                const stopColor = pickerGradientStop.value;
+                heroBanner.style.background = `linear-gradient(135deg, ${primary} 0%, ${stopColor} 100%)`;
+            }
+            
+            const heroTag = document.getElementById('txt-hero-tag');
+            heroTag.style.backgroundColor = hexToRgba(accent, 0.2);
+            heroTag.style.borderColor = hexToRgba(accent, 0.4);
+            heroTag.style.color = accent;
+
+            document.getElementById('guide-info-icon').style.color = primary;
+            
+            // Loop updates across all loaded checklist nodes
+            document.querySelectorAll('.guide-badge').forEach((badge, idx) => {
+                const isEven = idx % 2 === 1;
+                badge.style.backgroundColor = isEven ? hexToRgba(accent, 0.15) : hexToRgba(primary, 0.1);
+                badge.style.color = primary;
+            });
+
+            document.getElementById('adviser-icon-wrap').style.backgroundColor = hexToRgba(primary, 0.08);
+            document.getElementById('adviser-icon-wrap').style.color = primary;
+            document.getElementById('txt-adviser-tag').style.backgroundColor = hexToRgba(primary, 0.15);
+            document.getElementById('txt-adviser-tag').style.color = primary;
+            document.getElementById('txt-adviser-email').style.color = primary;
+            document.getElementById('txt-adviser-quote').style.backgroundColor = hexToRgba(primary, 0.04);
+            document.getElementById('txt-adviser-quote').style.borderColor = hexToRgba(primary, 0.1);
+        }
+
+        function renderCardInlineStyle(cardEl) {
+            const bg = cardEl.style.getPropertyValue('--card-bg').trim() || '#ffffff';
+            const txt = cardEl.style.getPropertyValue('--card-text').trim() || '#1e293b';
+            const accent = cardEl.style.getPropertyValue('--card-accent').trim() || '#4f46e5';
+
+            cardEl.style.backgroundColor = bg;
+            cardEl.style.color = txt;
+
+            const dragHandle = cardEl.querySelector('.card-drag-handle');
+            if (dragHandle) {
+                dragHandle.style.backgroundColor = hexToRgba(accent, 0.1);
+                dragHandle.style.color = accent;
+            }
+
+            const badge = cardEl.querySelector('.card-badge');
+            if (badge) {
+                badge.style.backgroundColor = hexToRgba(accent, 0.15);
+                badge.style.color = accent;
+            }
+
+            const desc = cardEl.querySelector('.card-desc');
+            if (desc) desc.style.color = txt;
+
+            const title = cardEl.querySelector('.card-title');
+            if (title) title.style.color = txt;
+
+            const anchor = cardEl.querySelector('.card-anchor');
+            if (anchor) {
+                anchor.style.backgroundColor = accent;
+                anchor.style.color = '#ffffff';
+            }
+        }
+
+        function renderAllCardsInline() {
+            document.querySelectorAll('.grid-card').forEach(card => renderCardInlineStyle(card));
+        }
+
+        function saveDashboardLayoutState() {
+            const clonedGrid = gridContainer.cloneNode(true);
+            const gridInlineAdd = clonedGrid.querySelector('#inline-add-card-block');
+            if (gridInlineAdd) gridInlineAdd.remove();
+            localStorage.setItem('hub_sandbox_grid_innerHTML', clonedGrid.innerHTML);
+
+            const clonedChecklist = checklistItemsGrid.cloneNode(true);
+            const checklistInlineAdd = clonedChecklist.querySelector('#inline-add-checklist-block');
+            if (checklistInlineAdd) checklistInlineAdd.remove();
+            localStorage.setItem('hub_sandbox_checklist_innerHTML', clonedChecklist.innerHTML);
+            
+            localStorage.setItem('hub_custom_bg_mode', globalBgMode.value);
+            localStorage.setItem('hub_custom_primary_hex', pickerPrimary.value);
+            localStorage.setItem('hub_custom_stop_hex', pickerGradientStop.value);
+            localStorage.setItem('hub_custom_accent_hex', pickerAccent.value);
+            
+            document.querySelectorAll('[data-edit]').forEach(el => {
+                if(el.id) localStorage.setItem('hub_sandbox_text_' + el.id, el.innerHTML.trim());
+            });
+        }
+
+        function loadDashboardLayoutState() {
+            const savedGrid = localStorage.getItem('hub_sandbox_grid_innerHTML');
+            if (savedGrid) {
+                gridContainer.innerHTML = savedGrid;
+                gridContainer.appendChild(inlineAddBlock);
+            }
+
+            const savedChecklist = localStorage.getItem('hub_sandbox_checklist_innerHTML');
+            if (savedChecklist) {
+                checklistItemsGrid.innerHTML = savedChecklist;
+                checklistItemsGrid.appendChild(inlineAddChecklistBlock);
+            }
+            
+            const savedMode = localStorage.getItem('hub_custom_bg_mode');
+            const savedPrimary = localStorage.getItem('hub_custom_primary_hex');
+            const savedStop = localStorage.getItem('hub_custom_stop_hex');
+            const savedAccent = localStorage.getItem('hub_custom_accent_hex');
+            
+            if(savedMode) globalBgMode.value = savedMode;
+            if(savedPrimary) pickerPrimary.value = savedPrimary;
+            if(savedStop) pickerGradientStop.value = savedStop;
+            if(savedAccent) pickerAccent.value = savedAccent;
+            
+            toggleBgModeInput();
+            applyCustomColors();
+            renderAllCardsInline();
+
+            document.querySelectorAll('[data-edit]').forEach(el => {
+                if(el.id) {
+                    const txt = localStorage.getItem('hub_sandbox_text_' + el.id);
+                    if (txt !== null) el.innerHTML = txt;
+                }
+            });
+            attachDynamicCardListeners();
+            attachChecklistListeners();
+        }
+
+        toggleAdminBtn.addEventListener('click', () => {
+            isAdminMode = !isAdminMode;
+            if (isAdminMode) {
+                body.classList.add('admin-mode');
+                toggleText.textContent = "Lock Design Layout & Save";
+                toggleAdminBtn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+                statusDot.classList.replace('bg-emerald-500', 'bg-amber-500');
+                statusText.textContent = "Sandbox Design View Active";
+                getGcodeBtn.classList.remove('hidden');
+                themePickerWrap.classList.replace('hidden', 'flex');
+                
+                document.querySelectorAll('[data-edit]').forEach(el => el.setAttribute('contenteditable', 'true'));
+                document.querySelectorAll('[data-edit-num]').forEach(el => el.setAttribute('contenteditable', 'true'));
+                document.querySelectorAll('.grid-card').forEach(el => el.setAttribute('draggable', 'true'));
+            } else {
+                body.classList.remove('admin-mode');
+                toggleText.textContent = "Turn On Template Editor";
+                toggleAdminBtn.classList.replace('bg-emerald-600', 'bg-indigo-600');
+                statusDot.classList.replace('bg-amber-500', 'bg-emerald-500');
+                statusText.textContent = "Template Preview Mode";
+                getGcodeBtn.classList.add('hidden');
+                themePickerWrap.classList.replace('flex', 'hidden');
+
+                document.querySelectorAll('[data-edit]').forEach(el => el.removeAttribute('contenteditable'));
+                document.querySelectorAll('[data-edit-num]').forEach(el => el.removeAttribute('contenteditable'));
+                document.querySelectorAll('.grid-card').forEach(el => el.setAttribute('draggable', 'false'));
+                saveDashboardLayoutState();
+                alert("Design configurations saved to application cache!");
+            }
+        });
+
+        // Add Custom App Layout Cards Handler
+        inlineAddBlock.addEventListener('click', () => {
+            const cardHtml = `
+            <div class="grid-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group" draggable="true" style="--card-bg: #ffffff; --card-text: #1e293b; --card-accent: #4f46e5;">
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-30">
+                    <button title="Configure Card Palette" class="card-palette-trigger admin-action-btn bg-slate-700 hover:bg-slate-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-palette"></i></button>
+                    <button title="Delete Card Permanently" class="delete-card-btn admin-action-btn bg-rose-600 hover:bg-rose-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="card-drag-handle p-3.5 rounded-xl transition-all" title="Click to swap icon / Hold & Drag card block to reorder">
+                            <i class="fa-icon fa-solid fa-link text-xl"></i>
+                        </div>
+                        <span contenteditable="true" data-edit class="card-badge text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Custom Tag</span>
+                    </div>
+                    <h3 contenteditable="true" data-edit class="card-title text-base font-extrabold">Dynamic Card Title</h3>
+                    <p contenteditable="true" data-edit class="card-desc text-xs mt-2 leading-relaxed opacity-80">Modify descriptive guideline content strings directly inside the canvas panel view layout block.</p>
+                </div>
+                <div class="mt-6 relative flex items-center gap-2">
+                    <button title="Modify Target URL Location" class="edit-link-trigger admin-action-btn absolute -top-3 -left-3 bg-indigo-600 text-white rounded-full p-2 text-xs shadow z-20 hover:scale-110 transition"><i class="fa-solid fa-pen"></i></button>
+                    <a href="https://example.com" target="_blank" class="card-anchor w-full text-center text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                        <span contenteditable="true" data-edit class="card-btn-text">Open Dynamic Target Location</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    </a>
+                </div>
+            </div>`;
+            
+            inlineAddBlock.insertAdjacentHTML('beforebegin', cardHtml);
+            const newCard = inlineAddBlock.previousElementSibling;
+            renderCardInlineStyle(newCard);
+            attachDynamicCardListeners();
+            if(isAdminMode) {
+                newCard.querySelectorAll('[data-edit]').forEach(el => el.setAttribute('contenteditable', 'true'));
+            }
+        });
+
+        // Add Custom Checklist Items Grid Handler
+        inlineAddChecklistBlock.addEventListener('click', () => {
+            const totalItems = document.querySelectorAll('.checklist-item').length + 1;
+            const itemHtml = `
+            <div class="checklist-item p-4 rounded-xl border border-slate-100 bg-slate-50/50 relative group">
+                <button title="Remove Checklist Item" class="delete-checklist-btn admin-action-btn absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow hidden transition"><i class="fa-solid fa-xmark"></i></button>
+                <div contenteditable="true" class="guide-badge h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs mb-3 transition-all duration-300" data-edit-num>${totalItems}</div>
+                <h4 contenteditable="true" data-edit class="font-bold text-xs text-slate-800 mb-1">New Milestone Task</h4>
+                <p contenteditable="true" data-edit class="text-[11px] text-slate-500 leading-relaxed">Click directly here to specify customized core advisory checklist requirements.</p>
+            </div>`;
+            
+            inlineAddChecklistBlock.insertAdjacentHTML('beforebegin', itemHtml);
+            attachChecklistListeners();
+            applyCustomColors(); // Automatically binds proper color backgrounds instantly
+        });
+
+        function attachChecklistListeners() {
+            document.querySelectorAll('.delete-checklist-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    if(confirm("Permanently drop this checklist core guideline item node?")) {
+                        btn.closest('.checklist-item').remove();
+                        applyCustomColors();
+                    }
+                };
+            });
+        }
+
+        function attachDynamicCardListeners() {
+            document.querySelectorAll('.delete-card-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    if(confirm("Remove this link asset sandbox container element completely?")) {
+                        btn.closest('.grid-card').remove();
+                    }
+                };
+            });
+
+            document.querySelectorAll('.card-palette-trigger').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    activeTargetCard = btn.closest('.grid-card');
+                    modalCardBg.value = activeTargetCard.style.getPropertyValue('--card-bg').trim() || '#ffffff';
+                    modalCardText.value = activeTargetCard.style.getPropertyValue('--card-text').trim() || '#1e293b';
+                    modalCardAccent.value = activeTargetCard.style.getPropertyValue('--card-accent').trim() || '#4f46e5';
+                    cardPaletteModal.classList.remove('hidden');
+                };
+            });
+
+            document.querySelectorAll('.edit-link-trigger').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    activeTargetAnchor = btn.closest('.grid-card').querySelector('.card-anchor');
+                    modalLinkInput.value = activeTargetAnchor.getAttribute('href');
+                    linkModal.classList.remove('hidden');
+                };
+            });
+
+            document.querySelectorAll('.card-drag-handle').forEach(handle => {
+                handle.onclick = (e) => {
+                    if(!isAdminMode) return;
+                    e.preventDefault(); e.stopPropagation();
+                    activeTargetIconEl = handle.querySelector('.fa-icon');
+                    if(activeTargetIconEl) {
+                        const currentClasses = Array.from(activeTargetIconEl.classList);
+                        const faClass = currentClasses.find(c => c.startsWith('fa-') && c !== 'fa-solid' && c !== 'fa-icon');
+                        modalIconInput.value = faClass || 'fa-link';
+                        iconModal.classList.remove('hidden');
+                    }
+                };
+            });
+
+            const cards = document.querySelectorAll('.grid-card');
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart, false);
+                card.addEventListener('dragover', handleDragOver, false);
+                card.addEventListener('drop', handleDrop, false);
+                card.addEventListener('dragend', handleDragEnd, false);
+            });
+        }
+
+        function handleDragStart(e) {
+            if(!isAdminMode) { e.preventDefault(); return; }
+            dragSrcElement = this;
+            this.classList.add('ghost-card');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            e.dataTransfer.setData('text/style-bg', this.style.getPropertyValue('--card-bg'));
+            e.dataTransfer.setData('text/style-text', this.style.getPropertyValue('--card-text'));
+            e.dataTransfer.setData('text/style-accent', this.style.getPropertyValue('--card-accent'));
+        }
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            return false;
+        }
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            if (dragSrcElement !== this && isAdminMode) {
+                dragSrcElement.innerHTML = this.innerHTML;
+                dragSrcElement.style.setProperty('--card-bg', this.style.getPropertyValue('--card-bg'));
+                dragSrcElement.style.setProperty('--card-text', this.style.getPropertyValue('--card-text'));
+                dragSrcElement.style.setProperty('--card-accent', this.style.getPropertyValue('--card-accent'));
+                renderCardInlineStyle(dragSrcElement);
+
+                this.innerHTML = e.dataTransfer.getData('text/html');
+                this.style.setProperty('--card-bg', e.dataTransfer.getData('text/style-bg'));
+                this.style.setProperty('--card-text', e.dataTransfer.getData('text/style-text'));
+                this.style.setProperty('--card-accent', e.dataTransfer.getData('text/style-accent'));
+                renderCardInlineStyle(this);
+
+                attachDynamicCardListeners();
+                document.querySelectorAll('[data-edit]').forEach(el => {
+                    if (isAdminMode) el.setAttribute('contenteditable', 'true');
+                });
+            }
+            return false;
+        }
+        function handleDragEnd() {
+            document.querySelectorAll('.grid-card').forEach(c => c.classList.remove('ghost-card'));
+        }
+
+        document.body.addEventListener('click', (e) => {
+            if (isAdminMode && e.target.closest('a')) e.preventDefault();
+        });
+
+        modalCancelBtn.addEventListener('click', () => { linkModal.classList.add('hidden'); });
+        modalSaveBtn.addEventListener('click', () => {
+            if (activeTargetAnchor) activeTargetAnchor.setAttribute('href', modalLinkInput.value.trim());
+            linkModal.classList.add('hidden');
+        });
+
+        iconModalCancel.addEventListener('click', () => { iconModal.classList.add('hidden'); });
+        iconModalSave.addEventListener('click', () => {
+            if(activeTargetIconEl) {
+                const targetIconString = modalIconInput.value.trim();
+                if(targetIconString) {
+                    activeTargetIconEl.className = `fa-icon fa-solid ${targetIconString} text-xl`;
+                }
+            }
+            iconModal.classList.add('hidden');
+        });
+
+        cardPaletteCancel.addEventListener('click', () => { cardPaletteModal.classList.add('hidden'); });
+        cardPaletteSave.addEventListener('click', () => {
+            if (activeTargetCard) {
+                activeTargetCard.style.setProperty('--card-bg', modalCardBg.value);
+                activeTargetCard.style.setProperty('--card-text', modalCardText.value);
+                activeTargetCard.style.setProperty('--card-accent', modalCardAccent.value);
+                renderCardInlineStyle(activeTargetCard);
+            }
+            cardPaletteModal.classList.add('hidden');
+        });
+
+        resetDashboardBtn.addEventListener('click', () => {
+            if (confirm("Reset template back to default setup? This drops all dashboard structural and color configurations completely.")) {
+                localStorage.clear(); window.location.reload();
+            }
+        });
+
+        getGcodeBtn.addEventListener('click', () => {
+            let docClone = document.documentElement.cloneNode(true);
+            const adminBar = docClone.querySelector('#admin-control-bar');
+            if(adminBar) adminBar.remove();
+
+            docClone.querySelectorAll('.admin-action-btn').forEach(el => el.remove());
+            
+            const inlineAdd = docClone.querySelector('#inline-add-card-block');
+            if (inlineAdd) inlineAdd.remove();
+            
+            const checklistInlineAdd = docClone.querySelector('#inline-add-checklist-block');
+            if (checklistInlineAdd) checklistInlineAdd.remove();
+
+            const lModal = docClone.querySelector('#link-modal');
+            const iModal = docClone.querySelector('#icon-modal');
+            const cpModal = docClone.querySelector('#card-palette-modal');
+            const cModal = docClone.querySelector('#code-modal');
+            if(lModal) lModal.remove(); if(iModal) iModal.remove(); if(cpModal) cpModal.remove(); if(cModal) cModal.remove();
+
+            docClone.querySelectorAll('[data-edit]').forEach(el => el.removeAttribute('contenteditable'));
+            docClone.querySelectorAll('[data-edit-num]').forEach(el => el.removeAttribute('contenteditable'));
+            docClone.querySelectorAll('.grid-card').forEach(el => el.removeAttribute('draggable'));
+            docClone.querySelector('body').classList.remove('admin-mode');
+
+            codeTextarea.value = "<!DOCTYPE html>\n" + docClone.outerHTML;
+            codeModal.classList.remove('hidden');
+        });
+
+        codeCloseBtn.addEventListener('click', () => { codeModal.classList.add('hidden'); });
+        codeCopyBtn.addEventListener('click', () => {
+            codeTextarea.select();
+            navigator.clipboard.writeText(codeTextarea.value).then(() => {
+                copySuccessMsg.classList.replace('opacity-0', 'opacity-100');
+                setTimeout(() => copySuccessMsg.classList.replace('opacity-100', 'opacity-0'), 2500);
+            });
+        });
+
+        loadDashboardLayoutState();
+    </script>
+</body>
+</html>
